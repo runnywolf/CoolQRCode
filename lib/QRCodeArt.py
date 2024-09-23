@@ -59,7 +59,8 @@ class DrawData: # 計算繪製參數
 		
 		for i in range(qr_w_pixels):
 			for j in range(qr_w_pixels):
-				if self._isPosArea(Vector2(i, j)): continue
+				if not self._isDataArea(Vector2(i, j)): continue
+				
 				v2_draw_pos = (self.v2_qr_draw_pos + Vector2(i + 0.5, j + 0.5) * self.qr_pixel_width) * self.SMOOTH_RATE
 				pixel_radius = (self.qr_pixel_width / 2) * pixel_radius_scale * self.SMOOTH_RATE
 				pixel_color = ("000" if self.qr_arr[j][i] else "fff") + alpha_code # QRCode 像素點是黑色還是白色
@@ -96,7 +97,36 @@ class DrawData: # 計算繪製參數
 					_drawColorRect(imgDraw, v2_draw_pos, pixel_radius, pixel_color) # 繪製定位點
 		
 		return img.resize(self.v2_output_size.tup())
-	# 生成資料點圖層, 若非資料區域則
+	# 生成資料點圖層, 若非資料區域則隨機塗色
+	
+	def getErrorRate(self, img_sd_output: Image.Image) -> tuple[float, float]:
+		if img_sd_output.size != self.v2_output_size.tup():
+			print("[Warning][QRCodeArt.DrawData.getErrorRate] Image size is not same.")
+			return 0
+		
+		qr_w_pixels = len(self.qr_arr) # QRCode 的像素邊長 (px)
+		
+		pixel_num = 0
+		pixel_data = [0, 0] # 資料點的錯誤情形
+		
+		for i in range(qr_w_pixels):
+			for j in range(qr_w_pixels):
+				if not self._isDataArea(Vector2(i, j)): continue
+				
+				v2_draw_pos = (self.v2_qr_draw_pos + Vector2(i + 0.5, j + 0.5) * self.qr_pixel_width) # 像素點座標
+				pixel_color = img_sd_output.getpixel(v2_draw_pos.tup()) # 像素點顏色
+				pixel_color_grayscale = (pixel_color[0] * 0.299 + pixel_color[1] * 0.587 + pixel_color[2] * 0.114) / 255 # 像素點灰階值, 0黑 1白
+				control_image_pixel_grayscale = 1 - self.qr_arr[j][i] # control net image 像素點灰階值, 0黑 1白
+				
+				pixel_num += 1 # 統計的資料點個數
+				if (pixel_color_grayscale >= 0.5) != (control_image_pixel_grayscale == 1): pixel_data[0] += 1 # 資料點明暗錯誤率
+				pixel_data[1] += abs(pixel_color_grayscale - control_image_pixel_grayscale) # 資料點明暗差異平均
+		
+		pixel_grayscale_error = pixel_data[0] / pixel_num # 資料點明暗錯誤率
+		pixel_grayscale_avg_diff = pixel_data[1] / pixel_num # 資料點明暗差異平均
+		
+		return (pixel_grayscale_error, pixel_grayscale_avg_diff)
+	# 生成圖片與 control image 比較的錯誤率
 	
 	def _isPosArea(self, v2: Vector2) -> bool:
 		qr_w_pixels = len(self.qr_arr) # QRCode 的像素邊長 (px)

@@ -20,13 +20,20 @@ negative_prompt = "blurry, letter"
 image_num = 10 # 生成的圖片個數
 
 for i in range(image_num):
+	shortPrompt = "SF" # prompt 縮寫
+	pixel_radius = 0.2 # 額外添加的資料點的半徑
+	pixel_alpha = "A" # 額外添加的資料點像素的不透明度
+	
 	output_image = pipeline( # 使用 sd 生成與 QRCode 相近的圖片
 		image=control_image, prompt=prompt, negative_prompt=negative_prompt,
 		num_inference_steps=50, guidance_scale=8
 	).images[0]
 	output_image = output_image.convert("RGBA") # 將生成好的圖片改為 RGBA 通道
 	
-	output_image = Image.alpha_composite(output_image, drawData.getPosLayer(DrawStyle.CICRLE))
-	output_image = Image.alpha_composite(output_image, drawData.getDataLayer(DrawStyle.CICRLE, 0.2, "a"))
+	error = drawData.getErrorRate(output_image) # 計算圖片錯誤率
 	
-	output_image.save("output/output_%s.png"%i)
+	output_image = Image.alpha_composite(output_image, drawData.getPosLayer(DrawStyle.CICRLE)) # 額外添加圓形定位點
+	output_image = Image.alpha_composite(output_image, drawData.getDataLayer(DrawStyle.CICRLE, pixel_radius, pixel_alpha)) # 額外添加資料點像素
+	
+	output_image_name = f"{shortPrompt}_#{i}_pr{pixel_radius}_pa{pixel_alpha}_pge{error[0]:.3f}_pgad{error[1]:.3f}"
+	output_image.save(f"output/{output_image_name}.png")
