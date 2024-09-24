@@ -8,14 +8,14 @@ pipeline = StableDiffusionControlNetPipeline.from_pretrained(
 	"runwayml/stable-diffusion-v1-5", controlnet=controlnet
 ).to("cuda")
 
+control_pixel_radius = 0.5
 random_data = "".join(chr(random.randint(32, 126)) for _ in range(50)) # 隨機字串, 用於生成 QRCode
 random_data = "https://www.youtube.com/@bluenight1022"
 drawData = DrawData(random_data, qrcode.ERROR_CORRECT_M, (512, 512), 450) # 計算繪製 QRCode 的資料
-control_image = Image.new('RGBA', (512, 512), (255, 255, 255, 255)) # 灰色背景
-control_image = Image.alpha_composite(control_image, drawData.getDataLayerAndRandomBg(DrawStyle.SQUARE, 1)) # 將 QRCode 資料點加入 control image
+control_image = drawData.getDataLayerAndRandomBg(DrawStyle.CICRLE, control_pixel_radius) # 將 QRCode 資料點加入 control image
 control_image.save("control_image.png")
 
-prompt = "snow pine forest with lot of leaves"
+prompt = "snow pine forest"
 negative_prompt = "blurry, letter"
 image_num = 10 # 生成的圖片個數
 
@@ -35,5 +35,5 @@ for i in range(image_num):
 	output_image = Image.alpha_composite(output_image, drawData.getPosLayer(DrawStyle.CICRLE)) # 額外添加圓形定位點
 	output_image = Image.alpha_composite(output_image, drawData.getDataLayer(DrawStyle.CICRLE, pixel_radius, pixel_alpha)) # 額外添加資料點像素
 	
-	output_image_name = f"{shortPrompt}_#{i}_pr{pixel_radius}_pa{pixel_alpha}_pge{error[0]:.3f}_pgad{error[1]:.3f}"
+	output_image_name = f"{shortPrompt}_#{i}_cpr{control_pixel_radius}_pge{error[0]:.3f}_pgad{error[1]:.3f}"
 	output_image.save(f"output/{output_image_name}.png")

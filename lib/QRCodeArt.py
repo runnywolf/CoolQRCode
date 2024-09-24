@@ -2,7 +2,7 @@ from enum import Enum
 import numpy as np
 from PIL import Image, ImageDraw
 import qrcode
-from lib.Tool import Vector2, inRange
+from Tool import Vector2, inRange
 import random
 
 class DrawStyle(Enum): # QRCode 的定位點樣式
@@ -115,7 +115,7 @@ class DrawData: # 計算繪製參數
 				
 				v2_draw_pos = (self.v2_qr_draw_pos + Vector2(i + 0.5, j + 0.5) * self.qr_pixel_width) # 像素點座標
 				pixel_color = img_sd_output.getpixel(v2_draw_pos.tup()) # 像素點顏色
-				pixel_color_grayscale = (pixel_color[0] * 0.299 + pixel_color[1] * 0.587 + pixel_color[2] * 0.114) / 255 # 像素點灰階值, 0黑 1白
+				pixel_color_grayscale = _getGrayscale(pixel_color) / 255 # 像素點灰階值, 0黑 1白
 				control_image_pixel_grayscale = 1 - self.qr_arr[j][i] # control net image 像素點灰階值, 0黑 1白
 				
 				pixel_num += 1 # 統計的資料點個數
@@ -146,6 +146,27 @@ class DrawData: # 計算繪製參數
 		return False
 	# 座標是否在資料區域
 
+def getTrainImageError(img: Image.Image, img_control: Image.Image) -> float:
+	pixel_width = 16
+	
+	error_count = 0
+	for i in range(32):
+		for j in range(32):
+			v2_pos = Vector2(0.5+i, 0.5+j) * pixel_width
+			image_pixel_color = _getGrayscale(img.getpixel(v2_pos.tup())) # 訓練集 image 像素點顏色灰階值
+			control_pixel_color = _getGrayscale(img_control.getpixel(v2_pos.tup())) # 訓練集 control image 像素點顏色灰階值
+			if inRange(control_pixel_color, 120, 140): continue
+			if control_pixel_color < 50:
+				if image_pixel_color >= 128: error_count += 1
+			elif control_pixel_color > 200:
+				if image_pixel_color < 128: error_count += 1
+	
+	return error_count / (32 * 32)
+
+def _getGrayscale(color: tuple) -> float:
+	return color[0] * 0.299 + color[1] * 0.587 + color[2] * 0.114
+# 計算灰階值
+
 def _getQRCodeArr(data: str, correct_level: int) -> list[list[int]]:
 	qr = qrcode.QRCode(error_correction=correct_level, box_size=1, border=1) # 設定 QRCode 參數
 	qr.add_data(data) # 放入資料
@@ -167,3 +188,7 @@ def _drawColorRect(draw: ImageDraw, pos: Vector2, radius: float, colorCode: str)
 	point2 = (pos.x + radius, pos.y + radius)
 	draw.rectangle([point1, point2], fill="#"+colorCode)
 # 繪製色點
+
+img = Image.open("img/train_image.jpg")
+img_control = Image.open("img/train_control_image.jpg")
+print(getTrainImageError(img, img_control))
