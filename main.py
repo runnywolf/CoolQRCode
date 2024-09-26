@@ -8,16 +8,16 @@ pipeline = StableDiffusionControlNetPipeline.from_pretrained(
 	"runwayml/stable-diffusion-v1-5", controlnet=controlnet
 ).to("cuda")
 
-control_pixel_radius = 0.5
+control_pixel_radius = 0
 random_data = "".join(chr(random.randint(32, 126)) for _ in range(50)) # 隨機字串, 用於生成 QRCode
-random_data = "https://www.youtube.com/@bluenight1022"
+random_data = "https://www.youtube.com/watch?v=P_CSdxSGfaA"
 drawData = DrawData(random_data, qrcode.ERROR_CORRECT_M, (512, 512), 450) # 計算繪製 QRCode 的資料
 control_image = drawData.getDataLayerAndRandomBg(DrawStyle.CICRLE, control_pixel_radius) # 將 QRCode 資料點加入 control image
 control_image.save("control_image.png")
 
 prompt = "snow pine forest"
 negative_prompt = "blurry, letter"
-image_num = 10 # 生成的圖片個數
+image_num = 100 # 生成的圖片個數
 
 for i in range(image_num):
 	shortPrompt = "SF" # prompt 縮寫

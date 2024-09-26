@@ -2,7 +2,7 @@ from enum import Enum
 import numpy as np
 from PIL import Image, ImageDraw
 import qrcode
-from Tool import Vector2, inRange
+from lib.Tool import Vector2, inRange
 import random
 
 class DrawStyle(Enum): # QRCode 的定位點樣式
@@ -188,7 +188,3 @@ def _drawColorRect(draw: ImageDraw, pos: Vector2, radius: float, colorCode: str)
 	point2 = (pos.x + radius, pos.y + radius)
 	draw.rectangle([point1, point2], fill="#"+colorCode)
 # 繪製色點
-
-img = Image.open("img/train_image.jpg")
-img_control = Image.open("img/train_control_image.jpg")
-print(getTrainImageError(img, img_control))
