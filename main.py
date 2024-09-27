@@ -7,20 +7,20 @@ controlnet = ControlNetModel.from_pretrained("yuanqiuye/qrcode_controlnet_v3")
 pipeline = StableDiffusionControlNetPipeline.from_pretrained(
 	"runwayml/stable-diffusion-v1-5", controlnet=controlnet
 ).to("cuda")
+pipeline.safety_checker = None
 
-control_pixel_radius = 0
-random_data = "".join(chr(random.randint(32, 126)) for _ in range(50)) # 隨機字串, 用於生成 QRCode
-random_data = "https://www.youtube.com/watch?v=P_CSdxSGfaA"
-drawData = DrawData(random_data, qrcode.ERROR_CORRECT_M, (512, 512), 450) # 計算繪製 QRCode 的資料
-control_image = drawData.getDataLayerAndRandomBg(DrawStyle.CICRLE, control_pixel_radius) # 將 QRCode 資料點加入 control image
-control_image.save("control_image.png")
-
-prompt = "snow pine forest"
-negative_prompt = "blurry, letter"
+# data, prompt, shortPrompt = ("https://www.youtube.com/watch?v=P_CSdxSGfaA", "snow pine forest", "SF") # SF
+data, prompt, shortPrompt = ("https://cse.ntou.edu.tw/p/412-1063-7484.php", "sea, waves", "SW") # SW
+negative_prompt = "blurry, letter, people"
 image_num = 100 # 生成的圖片個數
 
+control_pixel_radius = 0.5
+drawData = DrawData(data, qrcode.ERROR_CORRECT_M, (512, 512), 450) # 計算繪製 QRCode 的資料
+control_image = drawData.getDataLayerAndRandomBg(DrawStyle.CICRLE, control_pixel_radius) # 將 QRCode 資料點加入 control image
+control_image.save("control_image.png")
+print("-> module width =", drawData._getQrWidth()) # test
+
 for i in range(image_num):
-	shortPrompt = "SF" # prompt 縮寫
 	pixel_radius = 0.2 # 額外添加的資料點的半徑
 	pixel_alpha = "A" # 額外添加的資料點像素的不透明度
 	

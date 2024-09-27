@@ -42,10 +42,11 @@ class DrawData: # 計算繪製參數
 					pos_radius = self.qr_pixel_width * pixel_radius * self.SMOOTH_RATE
 					_drawColorDot(imgDraw, v2_draw_pos, pos_radius, color_code)
 			
-			for pixel_radius, color_code in ((2.5, "000"), (1.5, "fff"), (0.5, "000")): # 繪製右下角的小定位點
-				v2_draw_pos = (self.v2_qr_draw_pos + Vector2(qr_w_pixels-7.5, qr_w_pixels-7.5) * self.qr_pixel_width) * self.SMOOTH_RATE
-				pos_radius = self.qr_pixel_width * pixel_radius * self.SMOOTH_RATE
-				_drawColorDot(imgDraw, v2_draw_pos, pos_radius, color_code)
+			if self._getQrWidth() != 21: # 版本 1 的 QRCode 沒有右下小定位點
+				for pixel_radius, color_code in ((2.5, "000"), (1.5, "fff"), (0.5, "000")): # 繪製右下角的小定位點
+					v2_draw_pos = (self.v2_qr_draw_pos + Vector2(qr_w_pixels-7.5, qr_w_pixels-7.5) * self.qr_pixel_width) * self.SMOOTH_RATE
+					pos_radius = self.qr_pixel_width * pixel_radius * self.SMOOTH_RATE
+					_drawColorDot(imgDraw, v2_draw_pos, pos_radius, color_code)
 		
 		return img.resize(self.v2_output_size.tup())
 	# 生成定位點圖層
@@ -134,7 +135,10 @@ class DrawData: # 計算繪製參數
 		if v2.x < 9 and v2.y < 9: return True # 左上定位點
 		if v2.x >= qr_w_pixels-9 and v2.y < 9: return True # 右上定位點
 		if v2.x < 9 and v2.y >= qr_w_pixels-9: return True # 左下定位點
-		if inRange(v2.x, qr_w_pixels-10, qr_w_pixels-6) and inRange(v2.y, qr_w_pixels-10, qr_w_pixels-6): return True # 右下小定位點
+		
+		if self._getQrWidth() != 21: # 版本 1 的 QRCode 沒有右下小定位點
+			if inRange(v2.x, qr_w_pixels-10, qr_w_pixels-6) and inRange(v2.y, qr_w_pixels-10, qr_w_pixels-6): return True # 右下小定位點
+		
 		return False
 	# 座標是否在定位點區域
 	
@@ -145,6 +149,10 @@ class DrawData: # 計算繪製參數
 		if inRange(v2.x, 1, qr_w_pixels-2) and inRange(v2.y, 1, qr_w_pixels-2): return True # QRCode 周圍一圈白色像素並非資料區域
 		return False
 	# 座標是否在資料區域
+	
+	def _getQrWidth(self) -> int:
+		return len(self.qr_arr) - 2
+	# QRCode 邊長 (不包含白邊框)
 
 def getTrainImageError(img: Image.Image, img_control: Image.Image) -> float:
 	pixel_width = 16
