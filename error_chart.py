@@ -12,6 +12,13 @@ def get_image_pack_pgad_pd(folder_path: str) -> tuple[np.ndarray, np.ndarray]:
 	a_pgad = [round(pgad, 2) for pgad in a_pgad] # 使分布圖的數值數目更加集中
 	pgad, count = np.unique(a_pgad, return_counts=True)
 	count = count / image_num # 求機率
+	# plt.scatter(pgad, count, color='blue', alpha=0.5, zorder=5) # debug
+	
+	for i in range(len(pgad)-1, 0, -1):
+		while round((pgad[i]-pgad[i-1])*100) > 1:
+			pgad = np.insert(pgad, i, pgad[i]-0.01)
+			count = np.insert(count, i, 0)
+	# 將機率為 0 的 error 值的 key 補上
 	
 	spl = make_interp_spline(pgad, count) # 使用 make_interp_spline 進行樣條插值
 	x = np.linspace(min(pgad), max(pgad), 1000) # 解析度為 1000
@@ -36,16 +43,25 @@ def pixel_radius_chart() -> None:
 		x, y = get_image_pack_pgad_pd(f"img/test_radius/cpr{pixel_radius}")
 		plt.plot(x, y, color=curve_color, linewidth=2, label=pixel_radius.replace("1_full", "1 (full)"))
 	
-	draw_chart("Control image - pixel radius", "pixel radius")
+	draw_chart("Control image - Pixel radius", "pixel radius")
 # control image 點半徑與錯誤率分布的關係
 
 def qr_module_width_chart() -> None:
-	for module_width, curve_color in [("25", "#8f0")]:
+	for module_width, version, curve_color in [("41", 6, "#0ff"), ("33", 4, "#08f"), ("25", 2, "#f0f")]:
 		x, y = get_image_pack_pgad_pd(f"img/test_qr-module-width/mw{module_width}")
-		plt.plot(x, y, color=curve_color, linewidth=2, label=module_width)
+		plt.plot(x, y, color=curve_color, linewidth=2, label=module_width+f" (v{version})")
 	
 	draw_chart("Control image - QRCode module width", "module width")
 # control image 的 QRCode 複雜度與錯誤率分布的關係
 
+def prompt_chart() -> None:
+	for prompt, curve_color in [("snow pine forest", "#0a0"), ("sea, waves", "#08f")]:
+		x, y = get_image_pack_pgad_pd(f"img/test_prompt/'{prompt}'")
+		plt.plot(x, y, color=curve_color, linewidth=2, label=f"\"{prompt}\"")
+	
+	draw_chart("Control image - Positive prompt", "prompt")
+# control image 的 positive prompt 與錯誤率分布的關係
+
 pixel_radius_chart()
 qr_module_width_chart()
+prompt_chart()

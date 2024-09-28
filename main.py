@@ -10,7 +10,7 @@ pipeline = StableDiffusionControlNetPipeline.from_pretrained(
 pipeline.safety_checker = None
 
 # data, prompt, shortPrompt = ("https://www.youtube.com/watch?v=P_CSdxSGfaA", "snow pine forest", "SF") # SF
-data, prompt, shortPrompt = ("https://cse.ntou.edu.tw/p/412-1063-7484.php", "sea, waves", "SW") # SW
+data, prompt, shortPrompt = ("https://cse.ntou.edu.tw/?---------------------------------", "sea, waves", "SW") # SW
 negative_prompt = "blurry, letter, people"
 image_num = 100 # 生成的圖片個數
 
