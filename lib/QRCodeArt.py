@@ -5,6 +5,11 @@ import qrcode
 from lib.Tool import Vector2, inRange
 import random
 
+def setLayerAlpha(img: Image.Image, a: float) -> Image.Image:
+  img = img.convert("RGBA")
+  r, g, b, alpha = img.split()
+  return Image.merge("RGBA", (r, g, b, alpha.point(lambda p: int(p * a))))
+
 class DrawStyle(Enum): # QRCode 的定位點樣式
 	SQUARE = 1
 	CICRLE = 2
@@ -20,10 +25,10 @@ class DrawData: # 計算繪製參數
 		self.qr_pixel_width = qrcode_width / len(self.qr_arr) # 每個 QRCode 像素的實際邊長
 	# 建構子
 	
-	def getPosLayer(self, draw_style: DrawStyle) -> Image.Image:
+	def getPosLayer(self, draw_style: DrawStyle, alpha: float = 1) -> Image.Image:
 		qr_w_pixels = len(self.qr_arr) # QRCode 的像素邊長 (px)
 		
-		v2_img_size = self.v2_output_size * self.SMOOTH_RATE
+		v2_img_size = self.v2_output_size * self.SMOOTH_RATE # 暫時將圖片放大, 消除鋸齒邊緣
 		img = Image.new("RGBA", v2_img_size.tup(), (0, 0, 0, 0)) # 透明圖層, 用於繪製定位點
 		imgDraw = ImageDraw.Draw(img) # 繪圖用
 		
@@ -48,10 +53,13 @@ class DrawData: # 計算繪製參數
 					pos_radius = self.qr_pixel_width * pixel_radius * self.SMOOTH_RATE
 					_drawColorDot(imgDraw, v2_draw_pos, pos_radius, color_code)
 		
-		return img.resize(self.v2_output_size.tup())
+		img = img.resize(self.v2_output_size.tup()) # 回復原本大小的圖片
+		img = setLayerAlpha(img, alpha) # 調整不透明度
+		
+		return img
 	# 生成定位點圖層
 	
-	def getDataLayer(self, draw_style: DrawStyle, pixel_radius_scale: float, alpha_code: str = "f") -> Image.Image:
+	def getDataLayer(self, draw_style: DrawStyle, pixel_radius_scale: float, alpha: float = 1) -> Image.Image:
 		qr_w_pixels = len(self.qr_arr) # QRCode 的像素邊長 (px)
 		
 		v2_img_size = self.v2_output_size * self.SMOOTH_RATE
@@ -64,13 +72,16 @@ class DrawData: # 計算繪製參數
 				
 				v2_draw_pos = (self.v2_qr_draw_pos + Vector2(i + 0.5, j + 0.5) * self.qr_pixel_width) * self.SMOOTH_RATE
 				pixel_radius = (self.qr_pixel_width / 2) * pixel_radius_scale * self.SMOOTH_RATE
-				pixel_color = ("000" if self.qr_arr[j][i] else "fff") + alpha_code # QRCode 像素點是黑色還是白色
+				pixel_color = "000" if self.qr_arr[j][i] else "fff" # QRCode 像素點是黑色還是白色
 				if draw_style == DrawStyle.CICRLE:
 					_drawColorDot(imgDraw, v2_draw_pos, pixel_radius, pixel_color) # 繪製定位點
 				elif draw_style == DrawStyle.SQUARE:
 					_drawColorRect(imgDraw, v2_draw_pos, pixel_radius, pixel_color) # 繪製定位點
 		
-		return img.resize(self.v2_output_size.tup())
+		img = img.resize(self.v2_output_size.tup()) # 回復原本大小的圖片
+		img = setLayerAlpha(img, alpha) # 調整不透明度
+		
+		return img
 	# 生成資料點圖層
 	
 	def getDataLayerAndRandomBg(self, draw_style: DrawStyle, pixel_radius_scale: float) -> Image.Image:
@@ -180,7 +191,6 @@ def _getQRCodeArr(data: str, correct_level: int) -> list[list[int]]:
 	qr.add_data(data) # 放入資料
 	qr.make(fit=True) # 計算 QRCode
 	PILimg_QRCode = qr.make_image(fill_color="#000", back_color="#fff") # 生成 QRCode 圖片
-	PILimg_QRCode.save("QRCode.png")
 	NParr_QRCodeImg = np.array(PILimg_QRCode) # 圖片轉 np 陣列
 	return [[0 if j[0] == 255 else 1 for j in i] for i in NParr_QRCodeImg] # 生成 白為0 黑為1 的矩陣
 # 生成 白為0 黑為1 的 QRCode 矩陣, 容錯率依序為L/M/Q/H
