@@ -17,7 +17,7 @@ class DrawStyle(Enum): # QRCode 的定位點樣式
 class DrawData: # 計算繪製參數
 	SMOOTH_RATE = 4 # 保持像素平滑, 將圖層放大後再縮小
 	
-	def __init__(self, data: str, correct_level: int, size: tuple[int, int], qrcode_width: int) -> None:
+	def __init__(self, data: str, correct_level: int, size: tuple[int, int], qrcode_width: float) -> None:
 		self.v2_output_size = Vector2.fromTuple(size) # 原始圖片的大小
 		self.v2_qr_draw_size = Vector2(qrcode_width, qrcode_width) # QRCode 繪製範圍
 		self.v2_qr_draw_pos = self.v2_output_size / 2 - self.v2_qr_draw_size / 2 # QRCode 的繪製座標
